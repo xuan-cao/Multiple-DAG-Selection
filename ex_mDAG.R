@@ -1,14 +1,6 @@
 
 rm(list=ls())
-# install.packages("doMC")
-# install.packages("lars")
-
-# # to use data set from Ryan's code
-# X = cbind(X0, as.matrix(y))
-# j = ncol(X)
-
 # read source files
-setwd("~/OneDrive - University of Cincinnati/multiple_DAG/sim/")
 source("functions.R")
 
 ########################################################################
@@ -87,11 +79,9 @@ gamma = 1
 nu0 = 0.1
 c1 = 1 #c1 in ESC paper, doesn't matter when set to 1
 c2 = 2
-b = 1/(p*(K - 1)) #c2 in the paper, when comparing, make sure under the same data!!
-#b = 10
+b = 1/(p*(K - 1)) #c2 in the paper
 niter = 1000
 nburn = 0.2*niter
-#nburn = 100
 nadap = 0
 
 
@@ -124,11 +114,6 @@ for(j in 2:p){
 
 
 
-
-# lambdas <- c(1,2*qnorm(p=(200/(p*(1:(p-1)))),lower.tail=FALSE))/sqrt(n) #for n 100, p 300
-# LassoAdjseq <- DAGLassoseq(Y=scale(X1),lambda.seq=lambdas)
-# LassoAdjseq[which(LassoAdjseq!=0)] <- 1
-# evaluation.dag((A01 != 0), LassoAdjseq)
 
 X = array(0, dim = c(K, dim(X1)))
 X[1,,] = X1
