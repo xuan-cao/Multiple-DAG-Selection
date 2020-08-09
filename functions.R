@@ -2,15 +2,8 @@ mdag <- function(X, alpha, gamma, nu0, c1, c2, c3=NULL, b, niter, nburn) {
   K = dim(X)[1]
   n = dim(X)[2]
   p = dim(X)[3]
-  lambdas = c(1,2*qnorm(p=(5.5/(p*(1:(p-1)))),lower.tail=FALSE))/sqrt(n) # for 2% sparsity
-  #lambdas <- c(1,2*qnorm(p=(200/(p*(1:(p-1)))),lower.tail=FALSE))/sqrt(n) # for 4% sparsity
   # initialize
   S = array(0, dim=c(K, p, p))
-  # for (k in 1:K) {
-  #   S[k,,] = DAGLassoseq(Y=scale(X[k,,]),lambda.seq=lambdas)
-  #   S[k,,][which(S[k,,]!=0)] = 1
-  # }
-  
   S_chain = list(NULL)
   
   update_row = function(j) {
@@ -20,7 +13,6 @@ mdag <- function(X, alpha, gamma, nu0, c1, c2, c3=NULL, b, niter, nburn) {
     }else{
       Rj = floor( n/log(p)*min(c3, 1/log(n)) )
     }
-    # Sj_chain = list(S[, j, 1:(j-1)])
     Sj_chain = list(matrix(S[, j, 1:(j-1)], nrow = K))
     for (t in 2:(niter + nburn)) {
       Sj_curr = Sj_chain[[t-1]]
@@ -40,37 +32,8 @@ mdag <- function(X, alpha, gamma, nu0, c1, c2, c3=NULL, b, niter, nburn) {
     #cat("Posterior sampling for ", j,"th row is completed. . . . . .\n")
     return(Sj_chain)
   }
+  #for parallel computing
   mclapply(2:p, update_row, mc.cores = 1)
-  
-  # for (j in 2:p) {
-  #   # set Rj value
-  #   if(is.null(c3)){
-  #     Rj = floor( n/(log(p, base=10)*log(n, base=10)) )
-  #   }else{
-  #     Rj = floor( n/log(p)*min(c3, 1/log(n)) )
-  #   }
-  #   # Sj_chain = list(S[, j, 1:(j-1)])
-  #   Sj_chain = list(matrix(S[, j, 1:(j-1)], nrow = K))
-  #   for (t in 2:(niter + nburn)) {
-  #     Sj_curr = Sj_chain[[t-1]]
-  #     for (k in 1:K) {
-  #       Skj_curr = Sj_curr[k, ]
-  #       Skj_new = Sprop(Skj_curr, j, Rj)
-  #       Sj_new = Sj_curr
-  #       Sj_new[k, ] = Skj_new
-  #       log_ratio = logpost(X[k,,], j, Rj, Skj_new, alpha, gamma, nu0, c1, c2) - logpost(X[k,,], j, Rj, Skj_curr, alpha, gamma, nu0, c1, c2) + lkernelprob(Skj_curr, Skj_new, j) + b * (sum(rowSums(Sj_new) ^ 2) - sum(rowSums(Sj_new ^ 2)) - (sum(rowSums(Sj_curr) ^ 2) - sum(rowSums(Sj_curr ^ 2))))
-  #       prob = min(1, exp(log_ratio))
-  #       if (rbinom(1, 1, prob) == 1) {
-  #         Sj_curr[k, ] = Skj_new
-  #       }
-  #     }
-  #     Sj_chain[[t]] = Sj_curr
-  #   }
-  #   cat("Posterior sampling for ", j,"th row is completed. . . . . .\n")
-  #   S_chain[[j]] = Sj_chain
-  # }
-  # 
-  # return(S_chain)
 }
 
 Sprop <- function(S, j, Rj){
@@ -109,7 +72,6 @@ logpost <- function(X, j, Rj, S, alpha, gamma, nu0, c1, c2){
   
   dS.hat = dShat(X, j, S)
   
-  #    logpij = -s*log(c1) - c2*s*log(p) - lchoose(j-1, s) + log(s <= min(j-1, Rj))
   logpij = dpois(s, lambda = 1, log = T) - lchoose(j-1, s) + log(s <= min(j-1, Rj)) # Poisson prior for the model size
   
     logpost.val = logpij - s*log(1 + alpha/gamma)/2 - (alpha*n + nu0)*log(dS.hat)/2
